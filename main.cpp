@@ -11,15 +11,14 @@ using namespace std;
 struct Point {
 public:
     Point() : x(0), y(0) {}
-    Point(float x, float y) : x(x), y(y) {}
-    float x;
-    float y;
+    Point(double x, double y) : x(x), y(y) {}
+    double x;
+    double y;
     friend ostream& operator<<(ostream& stream, const Point& point) {
         stream << setprecision(16) << point.x << " " << point.y;
         return stream;
     }
 };
-
 
 class NormalFormLine {
     // p : a * x + b * y + c = 0
@@ -82,7 +81,7 @@ Point ** getPoints(string file, int * size) {
     fstream fs(file, fstream::in);
     char line[256];
     int number;
-    float x, y;
+    double x, y;
 
     if(!fs.is_open()) {
         cout << "Failed to open " << file << endl;
@@ -112,7 +111,7 @@ bool cmp(const Point * left, const Point * right) {
 
 bool checkPoints(string file, Point ** myResult, int size) {
     int number;
-    float x, y;
+    double x, y;
     fstream fs(file, fstream::in);
     if(!fs.is_open()) {
         cout << "Failed to open " << file << endl;
@@ -191,9 +190,9 @@ void findHull(Point * left, Point * right, Point ** points, int size, NormalForm
     }
 
     findHull(left, furthest, L, s1, &nflL, dir, result, res_size);
-    delete[] L;
+    delete L;
     findHull(furthest, right, R, s2, &nflR, dir, result, res_size);
-    delete[] R;
+    delete R;
 }
 
 Point ** quickHull(Point ** points, int size, int * res_size) {
@@ -230,6 +229,8 @@ Point ** quickHull(Point ** points, int size, int * res_size) {
     NormalFormLine nflRB(rightmost, bottommost);
     NormalFormLine nflBL(bottommost, leftmost);
 
+    cout << "Prepared to sort" << endl;
+
     int k = 0;
     for(int i = 0; i < size; ++i) {
         k = nflLT.compare(points[i]);
@@ -253,17 +254,19 @@ Point ** quickHull(Point ** points, int size, int * res_size) {
         }
     }
 
+    cout << "Sorted" << endl;
 
-    // nfl nebudu posilat ?
+    cout << "res_size : " << res_size << " *res_size : " << * res_size << endl;
+
     *res_size = 0;
     findHull(leftmost, topmost, LT, s1, &nflLT, 0, result, res_size);
-    delete[] LT;
+    delete LT;
     findHull(topmost, rightmost, TR, s2, &nflTR, 0, result, res_size);
-    delete[] TR;
+    delete TR;
     findHull(rightmost, bottommost, RB, s3, &nflRB, 1, result, res_size);
-    delete[] RB;
+    delete RB;
     findHull(bottommost, leftmost, BL, s4, &nflBL, 1, result, res_size);
-    delete[] BL;
+    delete BL;
 
     return result;
 }
@@ -280,8 +283,10 @@ int main (int argc, char* argv[]) {
     cout << "              in_file : " << in_file  << endl;
     cout << "             res_file : " << res_file << endl;
 
-    int size, res_size;
+    int size, res_size = 0;
     Point ** points = getPoints(in_file, &size);
+
+    if(points == NULL) return 2;
 
     start_time = omp_get_wtime();
     cout << "          Points read : " << size << endl;
