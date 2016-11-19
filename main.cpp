@@ -54,30 +54,6 @@ public:
 Point ** getPoints(string file, int * size) {
     Point ** points;
 
-    if(file == "test") {
-        *size = 18;
-        points = new Point*[*size];
-        points[0] = new Point(-5, 0);
-        points[1] = new Point(0, -5);
-        points[2] = new Point(5, 0);
-        points[3] = new Point(0, 5);
-        points[4] = new Point(-4, 3);
-        points[5] = new Point(-4, -3);
-        points[6] = new Point(4, 3);
-        points[7] = new Point(4, -3);
-        points[8] = new Point(3, 4);
-        points[9] = new Point(3, -4);
-        points[10] = new Point(-3, 4);
-        points[11] = new Point(-3, -4);
-        points[12] = new Point(1, 1);
-        points[13] = new Point(-1, 1);
-        points[14] = new Point(1, -1);
-        points[15] = new Point(-1, -1);
-        points[16] = new Point(0, 0);
-        points[17] = new Point(4, 4);
-        return points;
-    }
-
     fstream fs(file, fstream::in);
     char line[256];
     int number;
@@ -109,7 +85,7 @@ bool cmp(const Point * left, const Point * right) {
     return left->x < right->x;
 }
 
-bool checkPoints(string file, Point ** myResult, int size) {
+bool checkPoints(string file, vector<Point *> * myResult, int size) {
     int number;
     double x, y;
     fstream fs(file, fstream::in);
@@ -133,39 +109,39 @@ bool checkPoints(string file, Point ** myResult, int size) {
         res[number] = new Point(x, y);
     }
 
-    sort(myResult, myResult + size, cmp);
+    sort(myResult->begin(), myResult->end(), cmp);
     sort(res, res + size, cmp);
 
     for(int i = 0; i < size; ++i) {
-        if (myResult[i]->x != res[i]->x || myResult[i]->y != res[i]->y) {
+        if (myResult->at(i)->x != res[i]->x || myResult->at(i)->y != res[i]->y) {
             fs.close();
-            for(int i = 0; i < number; ++i) delete res[i];
+            for(int i = 0; i < size; ++i) delete res[i];
             delete res;
             return false;
         }
     }
 
     fs.close();
-    for(int i = 0; i < number; ++i) delete res[i];
-    delete res;
+    for(int i = 0; i < size; ++i) delete res[i];
+    delete[] res;
     return true;
 }
 
-void findHull(Point * left, Point * right, Point ** points, int size, NormalFormLine * nfl, int dir, Point ** result, int * res_size) {
+void findHull(Point * left, Point * right, vector<Point *> * points, int size, NormalFormLine * nfl, vector<Point *> * result, int * res_size) {
     if (left->x == right->x && left->y == right->y) return;         // mozna osetrit jeste v quickHull()
     double f = 0, temp;
 
     Point * furthest = NULL;
     for(int i = 0; i < size; ++i) {
-        temp = nfl->getDistance(points[i]);
+        temp = nfl->getDistance(points->at(i));
         if(temp > f) {
             f = temp;
-            furthest = points[i];
+            furthest = points->at(i);
         }
     }
 
     if (furthest == NULL) {
-        result[*res_size] = right;
+        result->push_back(right);
         *res_size += 1;
         return;
     }
@@ -173,29 +149,29 @@ void findHull(Point * left, Point * right, Point ** points, int size, NormalForm
     NormalFormLine nflL(left, furthest);
     NormalFormLine nflR(furthest, right);
 
-    Point ** L = new Point*[size];
-    Point ** R = new Point*[size];
+    vector<Point *> * L = new vector<Point *>();
+    vector<Point *> * R = new vector<Point *>();
 
     int k, s1 = 0, s2 = 0;
     for(int i = 0; i < size; ++i) {
-        k = nflL.compare(points[i]);
+        k = nflL.compare(points->at(i));
         if(k > 0) {
-            L[s1++] = points[i];
+            L->push_back(points->at(i));
             continue;
         }
-        k = nflR.compare(points[i]);
+        k = nflR.compare(points->at(i));
         if(k > 0) {
-            R[s2++] = points[i];
+            R->push_back(points->at(i));
         }
     }
 
-    findHull(left, furthest, L, s1, &nflL, dir, result, res_size);
-    delete L;
-    findHull(furthest, right, R, s2, &nflR, dir, result, res_size);
-    delete R;
+    findHull(left, furthest, L, s1, &nflL, result, res_size);
+    delete[] L;
+    findHull(furthest, right, R, s2, &nflR, result, res_size);
+    delete[] R;
 }
 
-Point ** quickHull(Point ** points, int size, int * res_size) {
+vector<Point *> * quickHull(Point ** points, int size, int * res_size) {
     // osetreni male size ?
 
     Point * leftmost = points[0], * rightmost = points[0], * topmost = points[0], * bottommost = points[0];
@@ -215,12 +191,20 @@ Point ** quickHull(Point ** points, int size, int * res_size) {
         }
     }
 
+    /*
     Point ** result = new Point*[size];
 
     Point ** LT = new Point*[size];
     Point ** TR = new Point*[size];
     Point ** RB = new Point*[size];
     Point ** BL = new Point*[size];
+    */
+
+    vector<Point *> * result = new vector<Point *>();
+    vector<Point *> * LT = new vector<Point *>();
+    vector<Point *> * TR = new vector<Point *>();
+    vector<Point *> * RB = new vector<Point *>();
+    vector<Point *> * BL = new vector<Point *>();
 
     int s1 = 0, s2 = 0, s3 = 0, s4 = 0;
 
@@ -235,22 +219,22 @@ Point ** quickHull(Point ** points, int size, int * res_size) {
     for(int i = 0; i < size; ++i) {
         k = nflLT.compare(points[i]);
         if (k > 0) {
-            LT[s1++] = points[i];
+            LT->push_back(points[i]);
             continue;
         }
         k = nflTR.compare(points[i]);
         if (k > 0) {
-            TR[s2++] = points[i];
+            TR->push_back(points[i]);
             continue;
         }
         k = nflRB.compare(points[i]);
         if (k > 0) {
-            RB[s3++] = points[i];
+            RB->push_back(points[i]);
             continue;
         }
         k = nflBL.compare(points[i]);
         if (k > 0) {
-            BL[s4++] = points[i];
+            BL->push_back(points[i]);
         }
     }
 
@@ -259,14 +243,18 @@ Point ** quickHull(Point ** points, int size, int * res_size) {
     cout << "res_size : " << res_size << " *res_size : " << * res_size << endl;
 
     *res_size = 0;
-    findHull(leftmost, topmost, LT, s1, &nflLT, 0, result, res_size);
+    findHull(leftmost, topmost, LT, s1, &nflLT, result, res_size);
     delete LT;
-    findHull(topmost, rightmost, TR, s2, &nflTR, 0, result, res_size);
+    cout << "LT" << endl;
+    findHull(topmost, rightmost, TR, s2, &nflTR, result, res_size);
     delete TR;
-    findHull(rightmost, bottommost, RB, s3, &nflRB, 1, result, res_size);
+    cout << "TR" << endl;
+    findHull(rightmost, bottommost, RB, s3, &nflRB, result, res_size);
     delete RB;
-    findHull(bottommost, leftmost, BL, s4, &nflBL, 1, result, res_size);
+    cout << "RB" << endl;
+    findHull(bottommost, leftmost, BL, s4, &nflBL, result, res_size);
     delete BL;
+    cout << "BL" << endl;
 
     return result;
 }
@@ -283,7 +271,7 @@ int main (int argc, char* argv[]) {
     cout << "              in_file : " << in_file  << endl;
     cout << "             res_file : " << res_file << endl;
 
-    int size, res_size = 0;
+    int size = 0, res_size = 0;
     Point ** points = getPoints(in_file, &size);
 
     if(points == NULL) return 2;
@@ -291,7 +279,7 @@ int main (int argc, char* argv[]) {
     start_time = omp_get_wtime();
     cout << "          Points read : " << size << endl;
 
-    Point ** result = quickHull(points, size, &res_size);
+    vector<Point *> * result = quickHull(points, size, &res_size);
     cout << "Points in convex hull : " << res_size << endl;
 
     end_time = omp_get_wtime();
@@ -307,7 +295,8 @@ int main (int argc, char* argv[]) {
         }
     }
 
-    // todo : cleanup
-
+    for(int i = 0; i < size; ++i) delete points[i];
+    delete[] result;
+    delete[] points;
     return 0;
 }
